@@ -44,6 +44,12 @@ pgAdmin: http://localhost:5050
 | DELETE | `/listings/{id}` | ✅ | Delete listing |
 
 ## Built with AI
+### Day 0 — Project Plan
+**Tools: Claude (web)**
+
+**How I worked:**
+
+Used Claude web app for project idea generation and day-by-day planning. Asked it to generate an artifact covering the full 4-day schedule, relevant resources, example projects, and best prompting practices for AI-assisted development. 
 
 ---
 
@@ -54,9 +60,9 @@ pgAdmin: http://localhost:5050
 
 I used AI as a mentor throughout — not just to generate code, but to explain every decision as it was made. Before writing a single line, I asked Claude to help design the data model and project structure so I understood what I was building and why. The boilerplate prompt came from that conversation and was run via Codex. I then asked the Codex agent to check for errors and fix them. Whenever I didn't understand an error or a terminal command, I used inline chat in order to explain the underlying concepts.
 
-Every unfamiliar concept got questioned in real time — how Docker networking works inside Compose, why `DATABASE_URL` uses the service name `db` instead of `localhost`, what the correct build order is and why. This wasn't passive generation — it was deliberate use of AI to compress the feedback loop on concepts that would otherwise take days to encounter organically.
+Every unfamiliar concept got questioned in real time — how Docker networking works inside Compose, what the correct build order is and why.
 
-One concrete example of this thinking: when setting up Docker, I asked specifically about running commands without `sudo` — a Linux permissions question that most tutorials skip. That led to understanding how Docker group membership works on Ubuntu, which is the kind of systems-level detail that matters in a real environment.
+One concrete example of this thinking: when setting up Docker, I asked specifically about running commands without `sudo`. That led to understanding how Docker group membership works on Ubuntu, which is the kind of systems-level detail that matters in a real environment.
 
 **Engineering decisions:**
 
@@ -64,15 +70,12 @@ One concrete example of this thinking: when setting up Docker, I asked specifica
 - Included pgAdmin for DB visibility during development — being able to inspect the actual tables while building the API layer made debugging faster
 - Database-first build order: models → migrations → API. The API imports models at startup; building it in the wrong order means you can't run anything
 
-**Where AI went wrong / what I corrected:**
-
-- Alembic was set up correctly by the agent but not explained. I noticed I didn't understand what had been done and asked for a breakdown before moving on — migration tools, why they exist, what `--autogenerate` actually does
-
 **What I learned:**
 
 - `depends_on` with a healthcheck prevents the API container from starting before Postgres is actually ready — without it, you get connection errors on startup because Docker starts containers in parallel
 - `DATABASE_URL` inside Docker uses the Compose service name as the hostname, not `localhost` — `localhost` inside a container refers to the container itself
-- Alembic tracks schema changes the same way Git tracks code changes. `--autogenerate` compares your models to the actual DB state and generates a migration file. You still review and run it manually
+- When I noticed I didn't understand what had been done, asked for a breakdown before moving on — migration tools, why they exist, what `--autogenerate` actually does
+- Alembic tracks schema changes the same way Git tracks code changes. `--autogenerate` compares your models to the actual DB state and generates a migration file
 - Migration tools exist because in production you can't just `DROP TABLE` and recreate — you need to evolve the schema safely without data loss
 
 ---
@@ -82,7 +85,7 @@ One concrete example of this thinking: when setting up Docker, I asked specifica
 
 **How I worked:**
 
-Day 2 was more focused. I had a working foundation and a clear prompt. Used Claude Code as the primary agent with a structured prompt specifying exact files, Pydantic version, and test constraints. Used Claude web to understand what was generated — particularly the testing layer, which was new territory.
+Day 2 was more focused. I had a working foundation and a clear prompt. Used Claude Code as the primary agent with a structured prompt specifying exact files, Pydantic version, and test constraints. Used Claude web to understand what was generated.
 
 **Engineering decisions:**
 
