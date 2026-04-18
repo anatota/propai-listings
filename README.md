@@ -96,6 +96,7 @@ Day 2 was more focused. I had a working foundation and a clear prompt. Used Clau
 - Tests use SQLite instead of Postgres. SQLite doesn't enforce foreign keys by default and doesn't support Postgres-specific types — tests pass but don't fully reflect production behavior. Acceptable for this project (though I challenged Claude if this was the right decision 😄)
 - First test run failed because `DATABASE_URL` isn't set in the test environment. `app.database` reads it at import time, so pytest crashed before running a single test. Agent self-diagnosed and added `conftest.py` to set a dummy value before imports run
 - `POST /listings` currently requires `owner_id` in the request body — correct behavior would be extracting it from a JWT token. Deferred to Day 3, requires a manually seeded user in the DB to test
+- I did not like that http://localhost:8000/ showed {"detail":"Not Found"}. Therefore, I added root endpoint where it simply redirects to the docs page
 
 **What I learned:**
 
