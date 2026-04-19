@@ -30,6 +30,10 @@ API: http://localhost:8000
 Docs: http://localhost:8000/docs  
 pgAdmin: http://localhost:5050
 
+## Demo
+
+[Watch the demo on YouTube](https://youtu.be/ixxKN8auN1Y)
+
 ## API Documentation
 
 Interactive docs are available at **http://localhost:8000/docs** (Swagger UI) once the stack is running. All endpoints, request/response schemas, and auth flows can be explored and tested there directly.
