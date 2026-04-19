@@ -2,7 +2,7 @@
 Seed script — run from project root: python scripts/seed.py
 
 Creates 1 admin user and 12 realistic property listings across Tbilisi and Batumi.
-Idempotent: deletes all existing listings before inserting, upserts the admin user.
+Idempotent on first run: seeds once, skips if listings already exist.
 """
 
 import sys
@@ -225,10 +225,11 @@ def seed():
             db.flush()  # get admin.id before inserting listings
             print(f"[create] admin user  →  {ADMIN_EMAIL}")
 
-        # Clear existing listings (idempotent)
-        deleted = db.query(Listing).delete()
-        if deleted:
-            print(f"[clear]  removed {deleted} existing listing(s)")
+        # Skip if listings already exist
+        existing = db.query(Listing).count()
+        if existing:
+            print(f"[skip]   {existing} listing(s) already exist — skipping seed")
+            return
 
         # Insert listings
         for data in LISTINGS:

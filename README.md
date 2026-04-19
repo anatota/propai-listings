@@ -179,6 +179,15 @@ Day 4 was about making the project presentable and usable beyond the happy path.
 - Made the seed idempotent by deleting all listings before inserting — simpler and more predictable than checking for duplicates. Admin user is upsert-style: checked before creating, never deleted
 - Listings are spread across eight Tbilisi districts and four Batumi areas, with a realistic mix of property types, prices, and rental/sale status — the goal was data that would expose real filtering and pagination behavior, not just pass insert tests
 
+**Where AI went wrong / what I corrected:**
+
+- The seed script used `db.query(Listing).delete()` on every run, meaning it would wipe all listings on every container restart — including any real user data. The AI did not flag this as a problem. I caught it and directed the fix: wrap the inserts in an existence check so seeding only runs once on an empty table
+- `alembic.ini` was missing from the repository entirely. The Docker Compose command runs `alembic upgrade head` on startup, which requires this file to locate the migration scripts. The container was crashing immediately with `No config file 'alembic.ini' found`. I spotted the error, the agent generated the missing file
+
+**Regression testing:**
+
+After adding automatic seeding (run once on empty database on container startup), the full test suite was rerun to confirm nothing broke. All 30 tests passed — auth, listing CRUD, filters, pagination, and ownership enforcement. This was a regression run: no new functionality was added, the goal was to verify that the seeding logic and structural changes hadn't silently broken existing behavior.
+
 **What I learned:**
 
 - OpenAPI tags are cosmetic in the spec but have a real impact on usability — a Swagger UI with labelled, ordered groups is immediately navigable; one with auto-generated tags is not
