@@ -15,10 +15,6 @@ app = FastAPI(
             "description": "Create, read, update, and delete real estate listings.",
         },
         {
-            "name": "Users",
-            "description": "User account management.",
-        },
-        {
             "name": "Health",
             "description": "Service liveness and version checks.",
         },

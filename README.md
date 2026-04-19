@@ -34,6 +34,8 @@ pgAdmin: http://localhost:5050
 
 Interactive docs are available at **http://localhost:8000/docs** (Swagger UI) once the stack is running. All endpoints, request/response schemas, and auth flows can be explored and tested there directly.
 
+![Swagger UI](docs/screenshots/screenshot.png)
+
 ## Endpoints
 
 | Method | Path | Auth required | Description |
