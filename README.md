@@ -109,3 +109,34 @@ Day 2 was more focused. I had a working foundation and a clear prompt. Used Clau
 - FastAPI's `dependency_overrides` replaces the real DB with a test DB by swapping the `get_db` function at runtime — the endpoints don't know anything changed, which is what makes it a proper test isolation pattern
 - The 11 tests cover: create (happy path, minimal fields, missing required), read (single, not found, list, pagination), update (partial update, not found), delete (success + verify gone, not found)
 - Foreign key constraints are enforced by Postgres at the DB level — the 500 error on POST wasn't a code bug, it was the database correctly rejecting a listing pointing to a non-existent user
+
+---
+
+### Day 3 — Auth, Filters, Pagination
+**Tools: Claude Code (agent)**
+
+**How I worked:**
+
+Gave the agent a structured Day 3 brief covering all goals upfront: JWT auth, query filters, pagination, error standardization, and tests. Reviewed the generated code before running tests, then let the agent self-diagnose and fix a dependency conflict it introduced.
+
+**Engineering decisions:**
+
+- Stored only the user ID (`sub` claim) in the JWT — no email, no roles. The token is a key, not a profile; anything else can be fetched from the DB when needed
+- `owner_id` is no longer accepted in the request body — it's extracted from the token. Clients can't forge ownership
+- `?city=` filters on the `location` field using a case-insensitive LIKE, rather than adding a separate `city` column — avoids a migration and is good enough for the current data shape
+- Replaced `skip/limit` pagination with `page/page_size` and a paginated response envelope (`{"total": N, "page": N, "page_size": N, "items": [...]}`) — total count is essential for any frontend building pagination controls
+- Ownership check returns 403, not 404 — returning 404 on an existing resource would be misleading. 403 correctly communicates "found it, but no"
+- Global `HTTPException` handler adds a `"code"` field to every error response — consistent shape means the client never has to guess the response structure on failure
+
+**Where AI went wrong / what I corrected:**
+
+- Dependency conflict: the agent added `passlib[bcrypt]` to requirements but didn't pin `bcrypt` itself. `pip` installed `bcrypt 5.0.0`, which had a breaking API change that passlib 1.7.4 doesn't handle — `hashpw` now raises `ValueError` for long internal test secrets and `__about__` was removed. The agent diagnosed the cause and pinned `bcrypt==4.0.1`
+
+**What I learned:**
+
+- JWTs are stateless — the server signs the token at login and never stores it. Every subsequent request is verified by re-decoding the signature, with no DB lookup needed until the payload is trusted. This is why token expiry matters: there's no server-side session to invalidate
+- `OAuth2PasswordRequestForm` expects `application/x-www-form-urlencoded`, not JSON — this is the OAuth2 spec. Sending JSON to the token endpoint returns 422. Required adding `python-multipart` as a dependency
+- 401 means "you are not authenticated" (no valid token). 403 means "you are authenticated but not allowed" (wrong owner). Using them interchangeably is a common mistake that leaks information or confuses clients
+- `passlib` is a wrapper library — it delegates the actual hashing to a backend (here, `bcrypt`). The wrapper API is stable, but the backend is a separate package with its own release cycle. Pinning both is the right call
+- SQLAlchemy's `.ilike()` compiles to `ILIKE` on Postgres (native case-insensitive) and to `LOWER(x) LIKE LOWER(y)` on SQLite — the same ORM call works correctly on both without any conditional logic
+- 30 tests total (up from 11): added auth flow, filter combinations, and ownership enforcement across both users
