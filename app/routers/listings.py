@@ -6,10 +6,15 @@ from app.models import Listing, User
 from app.schemas import ListingCreate, ListingUpdate, ListingResponse, ListingPage
 from app.auth import get_current_user
 
-router = APIRouter(prefix="/listings", tags=["listings"])
+router = APIRouter(prefix="/listings", tags=["Listings"])
 
 
-@router.get("/", response_model=ListingPage)
+@router.get(
+    "/",
+    response_model=ListingPage,
+    summary="List listings",
+    description="Returns a paginated list of all listings. Supports optional filters for city, price range, property type, and rental status. No authentication required.",
+)
 def list_listings(
     city: str | None = None,
     min_price: float | None = None,
@@ -37,7 +42,12 @@ def list_listings(
     return {"total": total, "page": page, "page_size": page_size, "items": items}
 
 
-@router.get("/{listing_id}", response_model=ListingResponse)
+@router.get(
+    "/{listing_id}",
+    response_model=ListingResponse,
+    summary="Get a listing",
+    description="Fetches a single listing by its ID. Returns 404 if the listing does not exist. No authentication required.",
+)
 def get_listing(listing_id: int, db: Session = Depends(get_db)):
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
     if not listing:
@@ -45,7 +55,13 @@ def get_listing(listing_id: int, db: Session = Depends(get_db)):
     return listing
 
 
-@router.post("/", response_model=ListingResponse, status_code=201)
+@router.post(
+    "/",
+    response_model=ListingResponse,
+    status_code=201,
+    summary="Create a listing",
+    description="Creates a new real estate listing owned by the authenticated user. Requires a valid Bearer token.",
+)
 def create_listing(
     payload: ListingCreate,
     db: Session = Depends(get_db),
@@ -58,7 +74,12 @@ def create_listing(
     return listing
 
 
-@router.patch("/{listing_id}", response_model=ListingResponse)
+@router.patch(
+    "/{listing_id}",
+    response_model=ListingResponse,
+    summary="Update a listing",
+    description="Partially updates fields on an existing listing. Requires authentication and ownership; returns 403 if the requester is not the owner.",
+)
 def update_listing(
     listing_id: int,
     payload: ListingUpdate,
@@ -77,7 +98,12 @@ def update_listing(
     return listing
 
 
-@router.delete("/{listing_id}", status_code=204)
+@router.delete(
+    "/{listing_id}",
+    status_code=204,
+    summary="Delete a listing",
+    description="Permanently deletes a listing by ID. Requires authentication and ownership; returns 403 if the requester is not the owner.",
+)
 def delete_listing(
     listing_id: int,
     db: Session = Depends(get_db),

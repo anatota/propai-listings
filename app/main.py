@@ -4,7 +4,25 @@ from app.routers import listings, auth
 
 app = FastAPI(
     title="PropAI Listings API",
-    version="0.2.0"
+    version="0.2.0",
+    openapi_tags=[
+        {
+            "name": "Auth",
+            "description": "User registration and JWT token issuance.",
+        },
+        {
+            "name": "Listings",
+            "description": "Create, read, update, and delete real estate listings.",
+        },
+        {
+            "name": "Users",
+            "description": "User account management.",
+        },
+        {
+            "name": "Health",
+            "description": "Service liveness and version checks.",
+        },
+    ],
 )
 
 app.include_router(auth.router)
@@ -32,11 +50,19 @@ def _status_code_label(status_code: int) -> str:
     return labels.get(status_code, f"HTTP_{status_code}")
 
 
-@app.get("/")
+@app.get(
+    "/",
+    include_in_schema=False,
+)
 def root():
     return RedirectResponse(url="/docs")
 
 
-@app.get("/health")
+@app.get(
+    "/health",
+    tags=["Health"],
+    summary="Health check",
+    description="Returns service status and current API version. No authentication required.",
+)
 def health_check():
     return {"status": "ok", "version": "0.2.0"}

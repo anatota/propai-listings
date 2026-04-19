@@ -30,18 +30,38 @@ API: http://localhost:8000
 Docs: http://localhost:8000/docs  
 pgAdmin: http://localhost:5050
 
+## API Documentation
+
+Interactive docs are available at **http://localhost:8000/docs** (Swagger UI) once the stack is running. All endpoints, request/response schemas, and auth flows can be explored and tested there directly.
+
 ## Endpoints
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/health` | ❌ | Health check |
-| POST | `/auth/register` | ❌ | Register user |
-| POST | `/auth/token` | ❌ | Login |
-| GET | `/listings` | ❌ | List all listings |
-| POST | `/listings` | ✅ | Create listing |
-| GET | `/listings/{id}` | ❌ | Get listing |
-| PATCH | `/listings/{id}` | ✅ | Partial update |
-| DELETE | `/listings/{id}` | ✅ | Delete listing |
+| Method | Path | Auth required | Description |
+|--------|------|:---:|-------------|
+| `GET` | `/health` | ❌ | Returns service status and current API version. |
+| `POST` | `/auth/register` | ❌ | Creates a new user account. Rejects duplicate emails with 400. |
+| `POST` | `/auth/token` | ❌ | Authenticates via OAuth2 password flow and returns a Bearer token. |
+| `GET` | `/listings` | ❌ | Paginated listing index. Optional filters: `city`, `min_price`, `max_price`, `property_type`, `is_for_rent`. |
+| `GET` | `/listings/{id}` | ❌ | Fetches a single listing by ID. Returns 404 if not found. |
+| `POST` | `/listings` | ✅ | Creates a listing owned by the authenticated user. |
+| `PATCH` | `/listings/{id}` | ✅ | Partially updates a listing. Returns 403 if the requester is not the owner. |
+| `DELETE` | `/listings/{id}` | ✅ | Permanently deletes a listing. Returns 403 if the requester is not the owner. |
+
+Protected endpoints require an `Authorization: Bearer <token>` header. Obtain a token from `POST /auth/token`.
+
+## Running Tests
+
+Tests use an isolated SQLite database and do not require a running Docker stack or a `.env` file.
+
+```bash
+# Run the full test suite
+.venv/bin/pytest tests/
+
+# Run a single test with verbose output
+.venv/bin/pytest tests/test_listings.py::test_create_listing -v
+```
+
+The `setup_db` fixture in `conftest.py` creates and drops the test database around each test, so tests are fully isolated and can be run in any order.
 
 ## Built with AI
 ### Day 0 — Project Plan
@@ -140,3 +160,27 @@ Gave the agent a structured Day 3 brief covering all goals upfront: JWT auth, qu
 - `passlib` is a wrapper library — it delegates the actual hashing to a backend (here, `bcrypt`). The wrapper API is stable, but the backend is a separate package with its own release cycle. Pinning both is the right call
 - SQLAlchemy's `.ilike()` compiles to `ILIKE` on Postgres (native case-insensitive) and to `LOWER(x) LIKE LOWER(y)` on SQLite — the same ORM call works correctly on both without any conditional logic
 - 30 tests total (up from 11): added auth flow, filter combinations, and ownership enforcement across both users
+
+---
+
+### Day 4 — Documentation, Seed Data, and Polish
+**Tools: Claude Code (agent)**
+
+**How I worked:**
+
+Day 4 was about making the project presentable and usable beyond the happy path. No new features — the goal was to make what already existed easier to understand and easier to run. Gave the agent focused, scoped prompts for each piece: one for OpenAPI metadata, one for the seed script, one for the README. Reviewed each output before moving on rather than chaining them blindly.
+
+**Engineering decisions:**
+
+- Added `summary`, `description`, and `tags` to every endpoint decorator rather than relying on function names — FastAPI generates OpenAPI from decorators, not docstrings, so that's the right place to put it
+- Used exactly four tags (`Auth`, `Listings`, `Users`, `Health`) and registered them in `openapi_tags` on the `FastAPI()` instance — tags defined there appear in the Swagger UI sidebar in a fixed order with descriptions, rather than in the order FastAPI first encounters them
+- Marked `GET /` with `include_in_schema=False` — it's a redirect to `/docs`, not an API endpoint; including it in the schema would be noise
+- Seed script imports directly from `app.models` and `app.database` rather than hitting the API — avoids token flow, and lets it run before any user exists. `Base.metadata.create_all` makes it safe to run before or after migrations
+- Made the seed idempotent by deleting all listings before inserting — simpler and more predictable than checking for duplicates. Admin user is upsert-style: checked before creating, never deleted
+- Listings are spread across eight Tbilisi districts and four Batumi areas, with a realistic mix of property types, prices, and rental/sale status — the goal was data that would expose real filtering and pagination behavior, not just pass insert tests
+
+**What I learned:**
+
+- OpenAPI tags are cosmetic in the spec but have a real impact on usability — a Swagger UI with labelled, ordered groups is immediately navigable; one with auto-generated tags is not
+- `summary` and `description` serve different audiences: summary is the one-liner in the endpoint list, description is what someone reads when they expand it to understand behaviour. Keeping them at different levels of detail is worth the extra lines
+- A seed script is also a form of documentation — reading through realistic data immediately communicates what the data model is meant to hold and what combinations are valid
